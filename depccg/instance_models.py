@@ -1,6 +1,7 @@
 from typing import Dict, Tuple, Optional
 import tarfile
 import logging
+import requests
 from pathlib import Path
 from collections import defaultdict
 
@@ -92,16 +93,15 @@ for model in MODELS:
 
 def download(lang: str, variant: Optional[str]) -> None:
     config = MODELS[f'{lang}[{variant}]' if variant else lang]
-
-    from google_drive_downloader import GoogleDriveDownloader as gdd
+    
     logging.info(f'start downloading from {config.url}')
     filename = (MODEL_DIRECTORY / config.name).with_suffix('.tar.gz')
-    gdd.download_file_from_google_drive(
-        file_id=config.url,
-        dest_path=filename,
-        unzip=False,
-        overwrite=True
-    )
+    
+    query_parameters = {"downloadformat" : "tar.gz"}
+    url = f"https://drive.google.com/uc?export=download&id={config.url}&confirm=yes"
+    response = requests.get(url, params=query_parameters)
+    with open(filename, "wb") as f:
+        f.write(response.content)
 
     if config.framework == 'chainer':
         logging.info('extracting files')
