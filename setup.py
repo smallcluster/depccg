@@ -1,6 +1,7 @@
 from setuptools import Extension, setup, find_packages
 import sys
 import os
+import sysconfig
 import contextlib
 import subprocess
 
@@ -98,6 +99,27 @@ ext_modules = [
     )
 ]
 
+# To Remove the generated platform suffix from the compiled pyx filename
+def get_ext_filename_without_platform_suffix(filename):
+    name, ext = os.path.splitext(filename)
+    ext_suffix = sysconfig.get_config_var('EXT_SUFFIX')
+
+    if ext_suffix == ext:
+        return filename
+
+    ext_suffix = ext_suffix.replace(ext, '')
+    idx = name.find(ext_suffix)
+
+    if idx == -1:
+        return filename
+    else:
+        return name[:idx] + ext
+    
+class BuildExtWithoutPlatformSuffix(build_ext):
+    def get_ext_filename(self, ext_name):
+        filename = super().get_ext_filename(ext_name)
+        return get_ext_filename_without_platform_suffix(filename)
+
 
 if len(sys.argv) > 1 and sys.argv[1] == 'clean':
     clean()
@@ -124,6 +146,6 @@ else:
             'Programming Language :: Python :: 3.6',
         ],
         zip_safe=False,
-        cmdclass={'build_ext': build_ext},
+        cmdclass={'build_ext': BuildExtWithoutPlatformSuffix},
         ext_modules=ext_modules
     )
