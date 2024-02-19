@@ -3,6 +3,7 @@ import tarfile
 import logging
 import requests
 import gdown
+import json
 from pathlib import Path
 from collections import defaultdict
 
@@ -15,6 +16,11 @@ from depccg.grammar import en, ja
 logger = logging.getLogger(__name__)
 
 MODEL_DIRECTORY = Path(__file__).parent / 'models'
+
+
+## LOAD MODELS URL
+with open(MODEL_DIRECTORY / 'models_urls.json') as urls:
+    MODELS_URLS = json.load(urls)
 
 
 SEMANTIC_TEMPLATES: Dict[str, Path] = {
@@ -37,39 +43,41 @@ MODELS: Dict[str, ModelConfig] = {
     'en': ModelConfig(
         'chainer',
         'tri_headfirst',
-        '1mxl1HU99iEQcUYhWhvkowbE4WOH0UKxv',
+        MODELS_URLS['en'],
         MODEL_DIRECTORY / 'config_en.jsonnet',
         SEMANTIC_TEMPLATES['en'],
     ),
     'en[elmo]': ModelConfig(
         'allennlp',
         'lstm_parser_elmo',
-        '1r2EsAtg47gFXDwMjmDdIw69akRo8oBXh',
+        MODELS_URLS['en[elmo]'],
         MODEL_DIRECTORY / 'config_en.jsonnet',
         SEMANTIC_TEMPLATES['en'],
     ),
     'en[rebank]': ModelConfig(
         'allennlp',
         'lstm_parser_char_rebanking',
-        '1N5B4t40OEUxPyWZWwpO02MEqDyWQVYUa',
+        MODELS_URLS['en[rebank]'],
         MODEL_DIRECTORY / 'config_rebank.jsonnet',
         SEMANTIC_TEMPLATES['en'],
     ),
     'en[elmo_rebank]': ModelConfig(
         'allennlp',
         'lstm_parser_elmo_rebanking',
-        '1deyCjSgCuD16WkEhOL3IXEfQBfARh_ll',
+        MODELS_URLS['en[elmo_rebank]'],
         MODEL_DIRECTORY / 'config_rebank.jsonnet',
         SEMANTIC_TEMPLATES['en'],
     ),
     'ja': ModelConfig(
         'chainer',
         'ja_headfinal',
-        '1bblQ6FYugXtgNNKnbCYgNfnQRkBATSY3',
+        MODELS_URLS['ja'],
         MODEL_DIRECTORY / 'config_ja.jsonnet',
         SEMANTIC_TEMPLATES['ja'],
     )
 }
+
+
 
 
 def _lang_and_variant(model: str):
@@ -101,7 +109,15 @@ def download(lang: str, variant: Optional[str]) -> None:
     full_path = filename.absolute()
     out = full_path.as_posix()
     
-    gdown.download(id=config.url, output=out)
+    # Google drive is picky about file size so we use gdown
+    if "drive.google.com" in config.url:
+        gdown.download(url=config.url, output=out)
+    else:
+    # If not, we use requests
+        query_parameters = {"downloadformat" : "tar.gz"}
+        response = requests.get(config.url, params=query_parameters)
+        with open(filename, "wb") as f:
+            f.write(response.content)
 
     if config.framework == 'chainer':
         logging.info('extracting files')
