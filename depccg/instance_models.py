@@ -98,7 +98,10 @@ def download(lang: str, variant: Optional[str]) -> None:
     logging.info(f'start downloading from {config.url}')
     filename = (MODEL_DIRECTORY / config.name).with_suffix('.tar.gz')
     
-    gdown.download(id=config.url, output=filename)
+    full_path = filename.absolute()
+    out = full_path.as_posix()
+    
+    gdown.download(id=config.url, output=out)
 
     if config.framework == 'chainer':
         logging.info('extracting files')
