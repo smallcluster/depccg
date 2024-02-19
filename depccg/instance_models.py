@@ -98,9 +98,7 @@ def download(lang: str, variant: Optional[str]) -> None:
     logging.info(f'start downloading from {config.url}')
     filename = (MODEL_DIRECTORY / config.name).with_suffix('.tar.gz')
     
-    query_parameters = {"downloadformat" : "tar.gz"}
-    url = f"https://drive.google.com/uc?id={config.url}"
-    gdown.download(url, filename)
+    gdown.download(id=config.url, output=filename)
 
     if config.framework == 'chainer':
         logging.info('extracting files')
