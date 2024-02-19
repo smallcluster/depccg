@@ -2,6 +2,7 @@ from typing import Dict, Tuple, Optional
 import tarfile
 import logging
 import requests
+import gdown
 from pathlib import Path
 from collections import defaultdict
 
@@ -98,10 +99,8 @@ def download(lang: str, variant: Optional[str]) -> None:
     filename = (MODEL_DIRECTORY / config.name).with_suffix('.tar.gz')
     
     query_parameters = {"downloadformat" : "tar.gz"}
-    url = f"https://drive.google.com/uc?export=download&id={config.url}&confirm=yes"
-    response = requests.get(url, params=query_parameters)
-    with open(filename, "wb") as f:
-        f.write(response.content)
+    url = f"https://drive.google.com/uc?id={config.url}"
+    gdown.download(url, filename)
 
     if config.framework == 'chainer':
         logging.info('extracting files')
